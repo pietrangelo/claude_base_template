@@ -1,0 +1,18 @@
+[project]
+name = "shop"
+version = "0.1.0"
+description = "Claude Code base template: spec-first TDD + DDD + adversarial testing"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "mutmut>=3.3"]
+
+[tool.pytest.ini_options]
+# tools/ holds the spec-traceability plugin loaded by the root conftest.py.
+pythonpath = ["src", "tools"]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib"]
+
+[tool.mutmut]
+source_paths = ["src/"]
+also_copy = ["tools/", "specs/", "conftest.py"]

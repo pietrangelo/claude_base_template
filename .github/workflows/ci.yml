@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  spec-first:
+    # Backstop for the agent guard: tests may only change after their spec clauses changed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Spec clauses trace to tests
+        run: python3 tools/spec_trace.py --report
+      - name: Test changes follow a spec commit
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: python3 tools/check_spec_changes.py --base "$BASE"
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest "mutmut>=3.3"
+      - name: Spec and adversary tests
+        # Exit code 5 means "no tests collected": fine for a freshly bootstrapped project.
+        run: python3 -m pytest -q || [ $? -eq 5 ]
+      - name: Guard and CI tooling tests
+        run: python3 -m pytest -q tools/tests
+
+  mutation:
+    # Checks that the tests actually constrain the implementation.
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest "mutmut>=3.3"
+      - name: Mutation gate
+        run: python3 tools/mutation_gate.py --max-survivors 0
