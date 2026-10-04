@@ -1,0 +1,7 @@
+mutants/
+__pycache__/
+.pytest_cache/
+.tdd/state/
+.tdd/violations.log
+*.egg-info/
+.venv/
